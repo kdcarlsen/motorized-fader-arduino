@@ -33,7 +33,7 @@
  * -----------------------------------------------------------------------
  */
 
-#include <CapSense.h>         //Library for fader touch sensitivity
+#include <CapacitiveSensor.h>         //Library for fader touch sensitivity - modified from CapSense to use new lib
 
 //Arduino Pin Assignments
 const int motorDown    = 3;   //H-Bridge control to make the motor go down
@@ -49,7 +49,7 @@ const int touchReceive = 8;   //Receive pin for Capacitance Sensing Circuit (Dig
 double faderMax        = 0;   //Value read by fader's maximum position (0-1023)
 double faderMin        = 0;   //Value read by fader's minimum position (0-1023)
 
-CapSense touchLine     = CapSense(touchSend, touchReceive);
+CapacitiveSensor touchLine     = CapacitiveSensor(touchSend, touchReceive);
 
 volatile bool touched  = false; //Is the fader currently being touched?
 
@@ -57,12 +57,33 @@ void setup() {
     pinMode (motorUp, OUTPUT);
     pinMode (motorDown, OUTPUT);
 
+    digitalWrite(motorUp, LOW);
+    digitalWrite(motorDown, LOW);
+
     calibrateFader();
+
+    Serial.begin(9600);
 }
 
 void loop() {
     int state = analogRead(pot);    //Read the state of the potentiometer
     checkTouch();                   //Checks to see if the fader is being touched
+    Serial.print("Touched ");
+    Serial.println(touched);
+    Serial.println();
+
+    Serial.print("Pot Val: ");
+    Serial.println(state);
+
+    Serial.print("Wiper Val: ");
+    Serial.println(wiper);
+
+    Serial.print("Fader Max: ");
+    Serial.println(faderMax);
+
+    Serial.print("Fader Min: ");
+    Serial.println(faderMin);
+    
 
     if (state < analogRead(wiper) - 10 && state > faderMin && !touched) {
         digitalWrite(motorDown, HIGH);
@@ -83,16 +104,18 @@ void calibrateFader() {
     delay(250);
     digitalWrite(motorUp, LOW);
     faderMax = analogRead(wiper);
+    delay(250);
 
     //Send fader to the bottom and read max position
     digitalWrite(motorDown, HIGH);
     delay(250);
     digitalWrite(motorDown, LOW);
     faderMin = analogRead(wiper);
+    delay(250);
 }
 
 //Check to see if the fader is being touched
 void checkTouch() {
-    touched = touchLine.capSense(30) > 700;  //700 is arbitrary and may need to be changed
+    touched = touchLine.capacitiveSensor(30) > 700;  //700 is arbitrary and may need to be changed
                                              //depending on the fader cap used (if any).
 }
